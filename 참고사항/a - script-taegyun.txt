@@ -1,0 +1,762 @@
+
+1. 작성하던 스크립트 확인 
+2. 마지막 라인에 필요한 항목들을 작성하고 저장
+Ex) 파일 이름, 날짜 관련번호 U-01 >> 파일명,csv
+
+
+linux
+-----------------------------------------------------------------------------------------
+U-01 
+
+#!/bin/bash
+
+# /etc/securetty 파일에 pts/0 ~ pts/x 관련 설정이 포함되어 있는지 확인
+if grep -q "pts/[0-9]" /etc/securetty; then
+  securetty_result="양호"
+else
+  securetty_result="취약"
+fi
+
+# SSH를 통해 루트 로그인이 허용되는지 확인
+if grep -q "^PermitRootLogin\s*no" /etc/ssh/sshd_config; then
+  result="양호"
+elif grep -q "^PermitRootLogin\s*yes" /etc/ssh/sshd_config; then
+ result="취약"
+else
+  result="양호"
+fi
+
+# 결과를 csv 파일에 저장
+echo "구분,진단코드,진단항목,취약도,점검결과" > linux_report.csv
+echo "계정관리,U-01,root 계정 원격 접속 제한,상,$result" >> linux_report.csv
+-----------------------------------------------------------------------------------------
+
+U-02
+
+#!/bin/bash
+
+# /etc/pam.d/common-password 또는 /etc/security/pwquality.conf 파일이 있는지 확인
+# 둘 다 존재하지 않으면 스크립트는 오류 메시지를 출력하고 종료
+if [[ ! -f "/etc/pam.d/common-password" ]] && [[ ! -f "/etc/security/pwquality.conf" ]]; then
+  echo "ERROR: /etc/pam.d/common-password and /etc/security/pwquality.conf files not found!"
+  exit 1
+fi
+
+# 암호 요구 사항 기본값 8과 3
+minlen=8
+minclass=3
+
+# /etc/security/pwquality.conf 파일에서 암호 요구 사항 확인
+if [[ -f "/etc/security/pwquality.conf" ]]; then
+  # minlen 매개 변수 확인
+  if grep -q "^minlen" /etc/security/pwquality.conf; then
+    minlen=$(grep "^minlen" /etc/security/pwquality.conf | awk '{print $2}')
+  fi
+
+  # minclass 매개 변수 확인
+  if grep -q "^minclass" /etc/security/pwquality.conf; then
+    minclass=$(grep "^minclass" /etc/security/pwquality.conf | awk '{print $2}')
+  fi
+fi
+
+# /etc/pam.d/common-password 파일에서 암호 요구 사항 확인
+# password.*pam_pwquality.so 패턴 검색 매개 변수가 없으면 기본값 8과 3 사용
+if [[ -f "/etc/pam.d/common-password" ]]; then
+  # 암호 복잡성 요구 사항 확인
+  if grep -q "password.*pam_pwquality.so" /etc/pam.d/common-password; then
+    if grep -q "minlen=[0-9]\+" /etc/pam.d/common-password; then
+      minlen=$(grep "minlen=[0-9]\+" /etc/pam.d/common-password | awk -F= '{print $2}')
+    fi
+
+    if grep -q "minclass=[0-9]\+" /etc/pam.d/common-password; then
+      minclass=$(grep "minclass=[0-9]\+" /etc/pam.d/common-password | awk -F= '{print $2}')
+    fi
+  fi
+fi
+
+# 암호 요구 사항을 확인
+if [[ $minlen -ge 8 ]] && [[ $minclass -ge 3 ]]; then
+  result="양호"
+else
+  result="취약"
+fi
+
+# 결과를 csv 파일에 저장
+echo "계정관리,U-02,패스워드 복잡성 설정,상,$result" >> linux_report.csv
+-----------------------------------------------------------------------------------------
+ 
+U-03
+
+#!/bin/bash
+
+# 잠금 임계값이 /etc/pam.d/common-auth 파일에 설정되어 있는지 확인
+lockout_threshold=$(grep -Po '(?<=deny=)[0-9]*' /etc/pam.d/common-auth)
+
+# 계정 잠금 임계값이 설정되어 있지 않거나 5 이하의 값으로 설정되어 있지 않은 경우
+# 잠금 임계값이 설정되어 있지 않은 경우 변수가 빈 문자열을 취약한 상태로 판단
+if [[ -z $lockout_threshold ]]; then
+  result="취약"
+else
+  if (( $lockout_threshold <= 5 )); then
+    result="양호"
+  else
+    result="취약"
+  fi
+fi
+
+# 결과를 csv 파일에 저장
+echo "계정관리,U-03,계정 잠금 임계값 설정,상,$result" >> linux_report.csv
+-----------------------------------------------------------------------------------------
+
+U-04
+
+#!/bin/bash
+
+# /etc/login.defs 파일에서 패스워드 최대 사용 기간의 설정 값을 확인
+# PASS_MAX_DAYS 값에 해당하는 라인을 찾아서 awk 이용하여 값 추출 후 password_max_age 변수에 저장
+password_max_age=$(grep "^PASS_MAX_DAYS" /etc/login.defs | awk '{print $2}')
+
+# 패스워드 최대 사용 기간이 90일 이내로 설정되어 있는 경우 양호
+if [[ $password_max_age -le 90 ]]; then
+    result="양호"
+else
+    result="취약"
+fi
+
+# 결과를 csv 파일에 저장
+echo "계정관리,U-04,패스워드 최대 사용 기간 설정,중,$result" >> linux_report.csv
+-----------------------------------------------------------------------------------------
+
+
+U-05
+
+#!/bin/bash
+
+# /etc/shadow 파일이 있는지 확인
+# 파일이 없는 경우 기록 후 스크립트 종료
+if [ ! -f /etc/shadow ]; then
+  echo "/etc/shadow file not found. Vulnerable" >> linux_report.csv
+  exit 1
+fi
+
+# /etc/passwd 파일의 두 번째 필드에 "x"가 있는지 확인
+# 실제 패스워드 정보는 /etc/shadow 파일에 저장, "x"일 경우, 분리해놓은 것으로 양호로 판단
+if grep -q "^[^:]*:[x!]" /etc/passwd; then
+  result="양호"
+
+else
+  result="취약"
+
+fi
+
+
+# 결과를 csv 파일에 저장
+echo "계정관리,U-05,패스워드 파일 보호,상,$result" >> linux_report.csv
+-----------------------------------------------------------------------------------------
+
+
+U-06
+
+#!/bin/bash
+
+# PATH 환경변수 값
+path_value=$(echo $PATH)
+
+# PATH 값에 "."이 맨 앞이나 중간에 포함 확인
+# "."이 맨 앞이나 중간에 포함되어 있는지를 확인
+if [[ $path_value == *.:* || $path_value == *:.* || $path_value == .* ]]; then
+    result="취약"
+else
+    result="양호"
+fi
+
+# 결과를 csv 파일에 저장
+echo -e "파일 및 디렉토리 관리,U-06,root 홈 패스 디렉터리 권한 및 패스 설정,상,$result" >> linux_report.csv
+
+-----------------------------------------------------------------------------------------
+
+
+U-18
+#!/bin/bash
+
+# iptables가 설치되어 있는지 확인
+if ! [ -x "$(command -v iptables)" ]; then
+  echo "Error: iptables is not installed." >&2
+  exit 1
+fi
+
+# 특정 호스트를 허용하는 iptables 규칙이 있는지 확인
+if iptables -C INPUT -m state --state NEW -m tcp -p tcp -s [ALLOWED_IP] --dport [ALLOWED_PORT] -j ACCEPT &> /dev/null; then
+  result="양호"
+else
+  result="취약"
+fi
+
+#결과를 csv 파일에 저장
+echo "파일 및 디렉토리 관리,U-18,접속 IP 및 포트 제한,상,$result" >> linux_report.csv
+
+
+-----------------------------------------------------------------------------------------
+ 
+
+mysql
+-----------------------------------------------------------------------------------------
+DY-04
+
+#!/bin/bash
+ 
+# mysql.user 테이블 접근이 가능한 사용자 조회
+user_access=$(mysql -u root -p -e "SELECT user FROM mysql.user WHERE user='root';" | grep -o 'root')
+
+# 해당 사용자가 존재하면 권한을 확인
+if [ "$user_access" == "root" ]; then
+  # root 사용자의 권한 확인
+  user_priv=$(mysql -e "SELECT * FROM mysql.user WHERE user='root' AND host='localhost';" | grep -o 'ALL PRIVILEGES')
+
+  if [ "$user_priv" == "ALL PRIVILEGES" ]; then
+    result="양호"
+  else
+    result="취약"
+  fi
+else
+  # 해당 사용자가 없으면 취약
+  result="취약"
+fi
+ 
+# 결과를 csv 파일에 저장
+
+
+# 결과를 csv 파일에 저장
+echo "계정관리,DY-04,DB 사용자 계정 정보 테이블 접근 권한,중,$result" >> my-sql_report.csv
+
+-----------------------------------------------------------------------------------------
+
+DY-05
+
+#!/bin/bash
+
+# my.cnf 파일 경로
+my_cnf_path="/etc/mysql/my.cnf"
+
+# my.cnf 파일에서 user 설정값 추출
+MYSQL_USER=$(grep "^user" ${my_cnf_path} | awk -F= '{print $2}' | tr -d ' ')
+
+# MySQL 데몬이 root 계정으로 실행중인지 확인
+if [ "$(ps -ef | grep mysqld | grep -c "user=root")" -gt 0 ]; then
+    result="취약"
+else
+    result="양호"
+fi
+
+# 결과를 csv 파일에 저장
+echo "보안설정,DY-05,root 권한으로 서버 구동 제한,상,$result" >> my-sql_report.csv
+
+-----------------------------------------------------------------------------------------
+
+DY-06
+
+#!/bin/bash
+
+# my.cnf 파일 경로 설정
+my_cnf_path="/etc/mysql/my.cnf"
+
+# my.cnf 파일이 없는 경우
+if [ ! -f "$my_cnf_path" ]; then
+  echo "my.cnf file not found. Vulnerable." >> /home/gyun/Desktop/sc/my-sql_report.csv
+  exit
+fi
+
+# my.cnf 파일 접근 권한 확인 설정
+# 파일의 권한을 변수에 할당, 640 이하면 양호
+my_cnf_path=$(stat -c "%a" "$my_cnf_path")
+if [ "$my_cnf_path" -le "640" ]; then
+  result="양호"
+else
+  result="취약"
+fi
+
+#결과를 csv 파일에 저장
+echo "보안설정,DY-06,환경설정 파일 접근 권한,중,$result" >> my-sql_report.csv
+
+-----------------------------------------------------------------------------------------
+
+
+
+
+
+-----------------------------------------------------------------------------------------
+openstack
+
+OT-20
+
+#!/bin/bash
+
+# Check if auth_uri starts with https:// and insecure is set to false
+auth_uri=$(grep -E "^auth_uri" /etc/cinder/cinder.conf | awk -F= '{print $2}' | tr -d '[:space:]')
+insecure=$(grep -E "^insecure" /etc/cinder/cinder.conf | awk -F= '{print $2}' | tr -d '[:space:]')
+
+if [[ $auth_uri == https://* ]] && [[ $insecure == false ]]; then
+  result="양호"
+else
+  result="취약"
+fi
+
+#결과를 csv 파일에 저장합니다
+echo "구분,진단코드,진단항목,취약도,점검결과" > openstack_report.csv
+echo "암호화,OT-20,블록 스토리지 서비스 인증을 위한 TLS 활성화,상,$result" >> openstack_report.csv
+
+-----------------------------------------------------------------------------------------
+
+OT-21
+
+#!/bin/bash
+
+# Check the value of nova_api.insecure in the [DEFAULT] section of /etc/cinder/cinder.conf
+insecure=$(sudo grep -Po '^nova_api.insecure\s*=\s*\K.*' /etc/cinder/cinder.conf)
+
+# Check if insecure is set to False
+if [ "$insecure" == "False" ]; then
+    result="양호" 
+else
+    result="취약" 
+fi 
+
+echo "암호화,OT-21,cinder와 nova의 TLS 통신,상,$result" >> openstack_report.csv
+
+-----------------------------------------------------------------------------------------
+
+OT-26
+
+#!/bin/bash
+
+# manila.conf 파일 경로
+manila_conf="/etc/manila/manila.conf"
+
+# manila.conf 파일이 없는 경우
+if [ ! -f "$manila_conf" ]; then
+  echo "암호화,OT-26,TLS를 이용한 공유 파일 시스템과 네트워킹연결,상,N/A" >> openstack_report.csv
+  exit
+fi
+
+# neutron_api_insecure 설정값 추출
+neutron_api_insecure=$(grep "^neutron_api_insecure" ${manila_conf} | awk -F= '{print $2}' | tr -d ' ')
+
+# neutron_api_insecure 값이 False인 경우 양호, True인 경우 취약
+if [ "$neutron_api_insecure" == "False" ]; then
+  result="양호"
+else
+  result="취약"
+fi
+
+# 결과를 csv 파일에 저장
+echo "암호화,OT-26,TLS를 이용한 공유 파일 시스템과 네트워킹연결,상,$result" >> openstack_report.csv
+
+-----------------------------------------------------------------------------------------
+
+OT-27
+
+#!/bin/bash
+
+# manila.conf 파일 경로 설정
+manila_conf_path="/etc/manila/manila.conf"
+
+# manila.conf 파일이 없는 경우
+if [ ! -f "$manila_conf_path" ]; then
+  echo "암호화,OT-27,TLS를 이용한 공유 파일 시스템과 블록 스토리지 서비스와의 연결,상,N/A" >> openstack_report.csv
+  exit
+fi
+
+# cinder_api_insecure 설정값 추출
+cinder_api_insecure=$(grep "^cinder_api_insecure" $manila_conf_path | awk -F= '{print $2}' | tr -d ' ')
+
+# cinder_api_insecure 값이 False 인 경우
+if [ "$cinder_api_insecure" == "False" ]; then
+  result="양호"
+else
+  result="취약"
+fi
+
+# 결과를 csv 파일에 저장
+echo "암호화,OT-27,TLS를 이용한 블록 스토리지와의 연결 보안 설정,중,$result" >> openstack_report.csv
+
+-----------------------------------------------------------------------------------------
+
+OT-29
+
+#!/bin/bash
+
+# neutron.conf 파일 경로 설정
+neutron_conf_path="/etc/neutron/neutron.conf"
+
+# neutron.conf 파일이 없는 경우
+if [ ! -f "$neutron_conf_path" ]; then
+  echo "neutron.conf file not found. Vulnerable." >> openstack_report.csv
+  exit
+fi
+
+# neutron.conf 파일에서 use_ssl 설정값 추출
+use_ssl=$(grep "^use_ssl" ${neutron_conf_path} | awk -F= '{print $2}' | tr -d ' ')
+
+# use_ssl 매개변수 확인
+if [ "$use_ssl" = "True" ]; then
+    result="양호"
+else
+    result="취약"
+fi
+
+# 결과를 csv 파일에 저장
+echo "암호화,OT-29,Neutron API 서버의 TLS 활성화,상,$result" >> openstack_report.csv
+
+-----------------------------------------------------------------------------------------
+
+DO-01
+
+#!/bin/bash
+
+# Docker 설치 유무 확인
+if [ ! $(which docker) ]; then
+  echo "Docker is not installed. Please install Docker."
+  exit 1
+fi
+
+# Docker 버전 확인
+docker_version=$(docker version --format '{{.Server.Version}}')
+
+# 알려진 취약점 존재 여부 확인
+if echo "$docker_version" | grep -qE "^1\.13|^17\.03|^17\.06|^17\.09\.0|^18\.03\.0-ce"; then
+  result="취약"
+else
+  result="양호"
+fi
+
+# 결과를 csv 파일에 저장
+echo "구분,진단코드,진단항목,취약도,점검결과" > docker_report.csv
+echo "Host설정,DO-01,도커 최신 패치 적용,상,$result" >> docker_report.csv
+
+-----------------------------------------------------------------------------------------
+
+DO-02
+
+#!/bin/bash
+
+# 도커 그룹 이름 설정
+docker_group="dockerroot"
+
+# 도커 그룹에 속한 사용자 계정 조회
+docker_users=$(getent group "$docker_group" | cut -d: -f4)
+
+# 도커 그룹에 불필요한 사용자가 존재하지 않는 경우
+if [ -z "$docker_users" ]; then
+  result="양호"
+else
+  # root 및 dockerroot 그룹에 속한 사용자 계정 동시 조회
+  root_users=$(getent group root | cut -d: -f4)
+  all_docker_users=$(echo "$docker_users,$root_users" | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//')
+
+  # 도커 그룹에 불필요한 사용자가 존재하는 경우
+  if [ "$all_docker_users" != "$docker_users" ]; then
+    result="취약"
+  else
+    result="양호"
+  fi
+fi
+
+# 결과를 csv 파일에 저장
+echo "Host설정,DO-02,도커 그룹에 불필요한 사용자 제거,중,$result" >> docker_report.csv
+
+-----------------------------------------------------------------------------------------
+
+
+DO-03
+
+#!/bin/bash
+
+# auditd가 설치되었는지 확인합니다
+if ! dpkg -s auditd &> /dev/null
+then
+    echo "Host설정,DO-03,Docker daemon audit 설정,상,N/A" >> docker_report.csv
+  exit
+fi
+
+else
+    # 도커에 대한 감사 규칙이 있는지 확인합니다
+    if grep -q "/usr/bin/docker" /etc/audit/audit.rules
+    then
+        result="양호"
+    else
+        result="취약"
+    fi
+fi
+
+# 결과를 csv 파일에 저장
+echo "Host설정,DO-03,Docker daemon audit 설정,상,$result" >> docker_report.csv
+
+
+-----------------------------------------------------------------------------------------
+
+
+
+DO-04
+
+#!/bin/bash
+
+# auditd가 설치되었는지 확인합니다
+if ! dpkg -s auditd &> /dev/null
+then
+    echo "Host설정,DO-04,/var/lib/docker audit 설정,상,N/A" >> docker_report.csv
+
+  exit
+fi
+
+else
+    # 도커에 대한 감사 규칙이 있는지 확인합니다
+    if grep -q "/var/lib/docker" /etc/audit/audit.rules
+    then
+        result="양호"
+    else
+        result="취약"
+    fi
+fi
+
+# 결과를 csv 파일에 저장
+echo "Host설정,DO-04,/var/lib/docker audit 설정/,상,$result" >> docker_report.csv
+
+
+-----------------------------------------------------------------------------------------
+
+
+DO-05
+
+#!/bin/bash
+
+# auditd가 설치되었는지 확인합니다
+if ! dpkg -s auditd &> /dev/null
+then
+    echo "Host설정,DO-05,/etc/docker audit 설정,상,N/A" >> docker_report.csv
+
+  exit
+fi
+
+else
+    # 도커에 대한 감사 규칙이 있는지 확인합니다
+    if grep -q "/etc/docker" /etc/audit/audit.rules
+    then
+        result="양호"
+    else
+        result="취약"
+    fi
+fi
+
+# 결과를 csv 파일에 저장
+echo "Host설정,DO-05,/etc/docker audit 설정/,상,$result" >> docker_report.csv
+
+-----------------------------------------------------------------------------------------
+
+DO-06
+
+#!/bin/bash
+
+# auditd가 설치되었는지 확인합니다
+if ! dpkg -s auditd &> /dev/null
+then
+    echo "Host설정,DO-06,docker.service audit 설정,상,N/A" >> docker_report.csv
+
+  exit
+fi
+
+# 도커 서비스 파일 경로
+docker_service_path="/lib/systemd/system/docker.service"
+
+# docker.service 파일이 있는지 확인합니다
+if [ ! -f $docker_service_path ]; then
+  result="취약"
+else
+  # docker.service 파일의 감사 설정을 확인합니다
+  audit=$(grep -i "audit" $docker_service_path)
+  if [ -z "$audit" ]; then
+    result="취약"
+  else
+   # 감사 규칙 파일 내용 확인
+    audit_rule=$(grep -i "docker.service" /etc/audit/audit.rules)
+    if [ -z "$audit_rule" ]; then
+      result="취약"
+    else
+      result="양호"
+    fi
+  fi
+fi
+
+echo "Host설정,DO-06,docker.service audit 설정,상,$result" >> docker_report.csv
+
+-----------------------------------------------------------------------------------------
+
+DO-07
+
+#!/bin/bash
+
+# auditd가 설치되었는지 확인합니다
+if ! dpkg -s auditd &> /dev/null
+then
+    echo "Host설정,DO-07,docker.socket audit 설정,상,N/A" >> docker_report.csv
+
+  exit
+fi
+
+# docker.socket 파일의 경로를 확인합니다
+docker_socket_path=$(systemctl show -p FragmentPath docker.socket | cut -d'=' -f2)
+
+# docker.socket 파일의 감사 설정을 확인합니다
+audit_enabled=$(grep "$docker_socket_path" /etc/audit/audit.rules)
+
+if [ -n "$audit_enabled" ]; then
+  result="양호"
+else
+  result="취약"
+fi
+
+echo "Host설정,DO-07,docker.socket audit 설정,상,$result" >> docker_report.csv
+
+-----------------------------------------------------------------------------------------
+
+DO-08
+
+#!/bin/bash
+
+# auditd가 설치되었는지 확인합니다
+if ! dpkg -s auditd &> /dev/null
+then
+    echo "Host설정,DO-08,/etc/default/docker audit 설정,상,N/A" >> docker_report.csv
+
+  exit
+fi
+
+else
+    # 도커에 대한 감사 규칙이 있는지 확인합니다
+    if grep -q "/etc/default/docker" /etc/audit/audit.rules
+    then
+        result="양호"
+    else
+        result="취약"
+    fi
+fi
+
+# 결과를 csv 파일에 저장
+echo "Host설정,DO-08,/etc/default/docker audit 설정,상,$result" >> docker_report.csv
+
+-----------------------------------------------------------------------------------------
+
+
+DO-09
+
+#!/bin/bash
+
+# 컨테이너 네트워크 제한이 적용되는지 확인합니다
+if docker network ls --quiet | xargs docker network inspect --format "{{ .Name}}: {{ .Options }}" | grep "com.docker.network.bridge.enable_ip_masquerade=false" >/dev/null; then
+    result="양호"
+else
+    result="취약"
+fi
+
+# 결과를 csv 파일에 저장
+echo "도커 데몬 설정,DO-09,default bridge를 통한 컨테이너 간 네트워크 트래픽 제한,상,$result" >> docker_report.csv
+
+
+-----------------------------------------------------------------------------------------
+
+DO-10
+
+#!/bin/bash
+
+# Docker 인증 플러그인이 사용되도록 설정되었는지 확인합니다
+if ps -ef | grep -v grep | grep "dockerd.*--authorization-plugin"; then
+    result="양호"
+else
+    result="취약"
+fi
+
+# 'docker search' 명령에 인증이 필요한지 확인합니다
+if docker search hello-world >/dev/null 2>&1; then
+    result="취약"
+fi
+
+echo "도커 데몬 설정,DO-10,도커 클라이언트 인증 활성화,상,$result" >> docker_report.csv 
+
+-----------------------------------------------------------------------------------------
+
+DO-11
+
+#!/bin/bash
+
+# --disable-legacy-registry 옵션이 사용 가능한지 확인합니다
+ps -ef | grep docker | grep -- --disable-legacy-registry > /dev/null
+if [ $? -eq 0 ]; then
+  result="양호"
+else
+ # /etc/default/docker에서 --disable-legacy-registry 옵션이 구성되어 있는지 확인합니다
+  grep -- "--disable-legacy-registry" /etc/default/docker > /dev/null
+  if [ $? -eq 0 ]; then
+    result="양호"
+  else
+    result="취약"
+  fi
+fi
+
+echo "도커 데몬 설정,DO-11,legacy registry (v1) 비활성화,하,$result" >> docker_report.csv 
+
+-----------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+쉘 스크립트를 실행할때는 샤뱅으로 시작한다
+조건문- if문 사용
+반복문- for문, while문, do문이 있다.
+
+스크립트 명령어
+(echo-변수 출력,  
+read-문자,숫자열 읽는, 
+stty-터미널세팅, 
+set-환경변수 세팅, 
+exec - 특정 프로그램으로 쉘 스크립트 대체용도)
+
+변수 선언시 공백 X
+
+ex)
+name=taegyun
+age=25
+
+${taegyun}
+= $기호 사용 후 { }안에 변수를 집어넣어주면 안에 들어간 값을 사용한다는 뜻 
+
+
+
+
+
+
+#!/bin/bash
+
+bash DY-04.sh
+bash DY-05.sh
+bash DY-06.sh
+bash DO-04.sh
+bash DO-05.sh
+bash DO-06.sh
+bash DO-07.sh
+bash DO-08.sh
+bash DO-09.sh
+bash DO-10.sh
+bash DO-11.sh
+
+
+
+

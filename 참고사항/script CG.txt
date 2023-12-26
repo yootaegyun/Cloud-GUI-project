@@ -1,0 +1,191 @@
+
+linux
+1
+리눅스에서 /etc/securetty 파일에 pts/0 ~ pts/x 관련 설정이 존재하는지
+확인하고  /etc/ssh/sshd_config 파일에서 Root 로그인 설정 확인해서
+원격 터미널 서비스를 사용하지 않거나, 사용 시 root 직접 접속을 차단한 경우에
+양호, 원격 터미널 서비스 사용 시 root 직접 접속을 허용한 경우 취약이라고 엑셀파일로 저장해줘
+
+2
+리눅스에서 /etc/pam.d/common-password 파일 또는
+/etc/security/pwquality.conf 파일 설정 내용을 확인해서
+영문, 숫자, 특수문자를 조합하여 2종류 조합 시 10자리 이상, 3종류 이상 조합 시
+8자리 이상의 패스워드가 설정된 경우(공공기관 9자리 이상)는 양호, 
+영문, 숫자, 특수문자를 조합하지 않거나 2종류 조합 시 10자리 미만, 3종류 이상 조합 시
+8자리 미만의 패스워드가 설정된 경우(공공기관 9자리 미만)은 취약이라고 엑셀파일로 저장해줘
+
+3
+리눅스에서 /etc/pam.d/common-auth 파일에서 임계값 설정을 확인해서 계정 잠금
+임계값이 5 이하의 값으로 설정되어 있는 경우에 양호, 계정 잠금 임계값이 설정되어 있지 않거나,
+5 이하의 값으로 설정되어 있지 않은 경우 취약이고 구분으로는 계정관리, 진단코드는 U-03,
+진단항목에는 계정 잠금 임계값 설정, 취약도에는 상이라고 엑셀파일로 저장해줘
+
+4
+리눅스에서 /etc/login.defs 파일에서 패스워드 최대 사용 기간의 설정 값 확인해서
+패스워드의 최대 사용기간이 90일 이내로 설정되어 있는 경우 양호,
+패스워드의 최대 사용기간이 없거나 90일 이내로 설정되어 있지 않은 경우에 취약이고 구분으로는
+계정관리, 진단코드는 U-04, 진단항목에는 패스워드 최대 사용 기간 설정, 취약도에는 중이라고 엑셀파일로 저장해줘
+
+5
+리눅스에서 /etc/shadow 파일 존재를 확인하고 /etc/passwd 파일 내 두 번째 필드가
+"x" 표시가 되어 있는지 확인했을때 쉐도우 패스워드를 사용하거나, 
+패스워드를 암호화하여 저장하는경우에는 양호, 쉐도우 패스워드를 사용하지 않고, 
+패스워드를 암호화하여 저장하지 않는 경우 취약상태를 엑셀파일로 스크립트 짜줘
+
+6
+리눅스에서 echo $PATH 명령어로 현재 설정된 PATH 값을 확인했을때
+PATH 환경변수에 "."이 맨 앞이나 중간에 포함되지 않은 경우 양호,
+PATH 환경변수에 "."이 맨 앞이나 중간에 포함된 경우 취약이라고 result를 사용해서
+엑셀파일로 저장해줘
+
+
+
+
+
+
+mysql
+4
+리눅스에서 DY-04. DB 사용자 계정 정보 테이블 접근 권한
+mysql.user 테이블 접근이 가능한 사용자 조회를 해서 DB사용자 계정 정보 테이블의 접근 권한이 
+적절한 사용자에게 부여되어 있는 경우 양호, DB사용자 계정 정보 테이블의 접근 권한이 적절한 사용자에게 
+부여되어 있지 않은 경우 취약이라고  
+
+5
+리눅스에서 DY-05. DB root 권한으로 서버 구동 제한
+mysql 데몬이 root 계정 또는 root 권한으로 구동되고 있는지 확인과 "my.cnf" 파일에서
+[mysqld] 그룹의 'user' 지시자의 설정 값을 확인해서 DBMS가 root 계정 또는 root 권한으로 구동되고 있지 않은 경우 양호,
+DBMS가 root 계정 또는 root 권한으로 구동되고 있을 경우 취약상태를 result를 사용해서 엑셀파일로 스크립트 짜줘
+
+6
+리눅스에서 DY-06. 환경설정 파일 접근 권한
+"my.cnf" 파일의 접근 권한 확인을 하고 환경설정 파일 접근 권한이 604(rw-r-----) 이하인 경우에는 양호,
+ 환경설정 파일 접근 권한이 640(rw-r-----) 초과인 경우에는 취약상태를 result를 사용해서
+엑셀파일로 스크립트 짜줘 
+
+ 
+
+
+
+
+
+openstack
+20
+리눅스에서 OT-20. 블록 스토리지 서비스 인증을 위한 TLS 활성화
+/etc/cinder/cinder.conf 파일에서 [keystone_authtoken] 섹션의 auth_uri 설정 값 확인과
+/etc/cinder/cinder.conf 파일에서 [keystone_authtoken] 섹션의 insecure 설정 값 확인을 하여
+/etc/cinder/cinder.conf 파일에서 [keystone_authtoken] 섹션의 auth_uri 매개변수가 https://로 시작하고,
+insecure 매개변수가 False로 되어있는 경우 양호,
+/etc/cinder/cinder.conf 파일에서 [keystone_authtoken] 섹션의 auth_uri 매개변수가 https://로 시작하지 않고,
+insecure 매개변수가 Ture로 되어있는 경우에는 취약상태를 result를 사용해서 엑셀파일로 스크립트 짜줘 
+
+
+21
+리눅스에서 OT-21. cinder와 nova의 TLS 통신
+/etc/cinder/cinder.conf 파일에서 [DEFAULT] 섹션의 nova_api.insecure 설정 값 확인하고
+/etc/cinder/cinder.conf 파일에서 [DEFAULT] 섹션의 nova_api.insecure 매개변수가 False로 되어있는 경우 양호,
+/etc/cinder/cinder.conf 파일에서 [DEFAULT] 섹션의 nova_api.insecure 매개변수가 True로 되어있는 경우 취약상태를
+result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+26
+리눅스에서 OT-26. TLS를 이용한 공유 파일 시스템과 네트워킹연결
+/etc/manila/manila.conf 파일에서 [DEFAULT] 섹션의 neutron_api_insecure 설정 값 확인해서 
+/etc/manila/manila.conf 파일에서 [DEFAULT] 섹션의 neutron_api.insecure 매개변수가 False로 되어 있는 경우 양호,
+/etc/manila/manila.conf 파일에서 [DEFAULT] 섹션의 neutron_api.insecure 매개변수가 True로 되어 있는 경우 취약이라고
+result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+27
+리눅스에서 OT-26. TLS를 이용한 공유 파일 시스템과 블록 스토리지 서비스와의 연결
+/etc/manila/manila.conf 파일에서 [DEFAULT] 섹션의 cinder_api_insecure 설정 값 확인해서 
+/etc/manila/manila.conf 파일에서 [DEFAULT] 섹션의 cinder_api_insecure 매개변수가 False로 되어 있는 경우 양호,
+/etc/manila/manila.conf 파일에서 [DEFAULT] 섹션의 cinder_api_insecure 매개변수가 True로 되어 있는 경우 취약이라고
+result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+29
+리눅스에서 OT-29. Neutron API 서버의 TLS 활성화
+/etc/neutron/neutron.conf 파일에서 [DEFAULT] 섹션의 use_ssl 설정 값 확인해서 
+/etc/neutron/neutron.conf 파일에서 [DEFAULT] 섹션의 use_ssl 매개변수가 True로 되어 있는 경우 양호,
+/etc/neutron/neutron.conf 파일에서 [DEFAULT] 섹션의 use_ssl 매개변수가 False로 되어 있는 경우 취약이라고
+result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+
+
+
+docker
+1
+리눅스 우분투에서 docker 버전 확인해서 알려진 취약점이 없는 버전을 사용하는 경우에 양호,
+알려진 취약점이 존재하는 버전을 사용하는 경우 취약이라고 result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+2
+리눅스 우분투에서 도커 그룹에 속한 사용자 계정 조회하고 도커 그룹 이름이 dockerroot일 경우 root 및
+dockerroot 그룹에 속한 사용자 계정 동시 조회해서 도커 그룹에 불필요한 사용자가 존재하지 않는 경우 양호,
+도커 그룹에 불필요한 사용자가 존재하는 경우 취약하라고 result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+3
+리눅스 우분투에서 명령어를 통해 /usr/bin/docker 감사 설정 확인하고 명령어를 통해 /etc/audit/audit.rules 파일의 내용 확인해서
+/usr/bin/docker 파일의 감사 설정이 적용되어 있는 경우 양호, /usr/bin/docker 파일의 감사 설정이 적용되어 있지 않은 경우 취약,
+auditd가 없는경우 N/A로 result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+4
+리눅스 우분투에서 명령어를 통해 /usr/bin/docker 감사 설정 확인하고 명령어를 통해 /etc/audit/audit.rules 파일의 내용 확인해서
+/var/lib/docker 디렉터리의 감사 설정이 적용되어 있는 경우 양호, /var/lib/docker 디렉터리의 감사 설정이 적용되어 있는 경우 취약,
+auditd가 없는경우 N/A로 result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+5
+리눅스 우분투에서 명령어를 통해 /etc/docker 감사 설정 확인하고 명령어를 통해 /etc/audit/audit.rules 파일의 내용 확인해서
+/etc/docker 디렉터리의 감사 설정이 적용되어 있는 경우 양호, /etc/docker 디렉터리의 감사 설정이 적용되어 있지 않은 경우 취약,
+auditd가 없는경우 N/A로 result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+6
+리눅스 우분투에서 docker.service 파일의 경로 확인과 docker.service 파일의 검사 설정 확인과 /etc/audit/audit.rule 파일 내용 확인해서 
+docker.service 파일의 감사 설정이 적용되어 있는 경우 양호,  docker.service 파일의 감사 설정이 적용되어 있지 않은 경우 취약이라고
+echo "도커 데몬 설정,DO-06,legacy registry,하,$result" >> docker_report.csv
+result값을 꼭 사용해서 스크립트 짜줘 
+
+
+
+7
+리눅스 우분투에서 docker.socket 파일의 경로 확인과 docker.socket 파일의 검사 설정 확인과 /etc/audit/audit.rule 파일 내용 확인해서
+ docker.socket 파일의 감사 설정이 적용되어 있는 경우 양호,  docker.socket 파일의 감사 설정이 적용되어 있지 않은 경우 취약이라고  
+echo "도커 데몬 설정,DO-06,legacy registry,하,$result" >> docker_report.csv
+result값을 꼭 사용해서 스크립트 짜줘 
+
+
+
+8
+리눅스 우분투에서 명령어를 통해 /etc/default/docker 감사 설정 확인하고 명령어를 통해 /etc/audit/audit.rules 파일의 내용 확인해서
+/etc/default/docker 파일의 감사 설정이 적용되어 있는 경우 양호, /etc/default/docker 파일의 감사 설정이 적용되어 있지 않은 경우 취약,
+auditd가 없는경우 N/A로 result를 사용해서 엑셀파일로 스크립트 짜줘
+
+
+
+9
+리눅스 우분투에서 docker network ls --quiet | xargs docker network inspect --format "{{ .Name}}: {{ .Options }}" 명령을 통해
+컨테이너 간 제한 옵션이 적용되어 있는지 확인하고 컨테이너 간 네트워크 통신이 가능하지 않은 경우 양호,  컨테이너 간 네트워크 통신이 가능한 경우
+취약이라고 echo "도커 데몬 설정,DO-09,default bridge를 통한 컨테이너 간 네트워크 트래픽 제한,상,$result" >> docker_report.csv
+result값을 꼭 사용해서 스크립트 짜줘 
+
+
+10
+리눅스 우분투에서 ps -ef | grep docker 명령어를 통해 인증 플러그인 옵션이 적용되어 있는지 확인하고
+docker search hello-world 명령어를 수행하는데 인증이 필요한지 확인해서 Docker 인증 플러그인이 적용되어 있는 경우 양호, 
+Docker 인증 플러그인이 적용되어 있지 않은 경우 취약이라고
+echo "도커 데몬 설정,DO-10,도커 클라이언트 인증 활성화,상,$result" >> docker_report.csv result값을 꼭 사용해서 스크립트 짜줘 
+
+
+11
+리눅스 우분투에서 ps -ef | grep docker 명령어를 통해 --disable-legacy-registry 옵션이 적용되어 있는지 확인하고 /etc/default/docker 파일에서 
+--disable-legacy-registry 옵션이 적용되어 있는지 확인해서 legacy registry v1이 비활성화 되어 있는 경우 양호,
+ legacy registry v1이 비활성화 되어 있지 않은 경우 취약이라고  echo "도커 데몬 설정,DO-11,legacy registry,하,$result" >> docker_report.csv
+result값을 꼭 사용해서 스크립트 짜줘 
+
+
+
