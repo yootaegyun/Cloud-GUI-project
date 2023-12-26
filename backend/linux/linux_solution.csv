@@ -1,0 +1,37 @@
+﻿진단코드,진단항목,조치방법
+U-01,root 계정 원격 접속 제한,"Telnet의 경우 /etc/securetty 파일에서 pts/0 ~ pts/x 설정 제거 또는, 주석 처리 | SSH의 경우 vi /etc/ssh/sshd_config 에서 PermitRootLogin no 로 설정"
+U-02,패스워드 복잡성 설정,Debian 계열의 경우 /etc/pam.d/common-password 또는 /etc/security/pwquality.conf 파일 편집 RHEL계열의 경우 /etc/pam.d/system-auth 파일 또는 /etc/security/pwquality.conf 파일 편집
+U-03,계정 잠금 임계값 설정,Debian 계열의 경우 /etc/pam.d/common-auth 파일 내 설정 값을 변경 RHEL 계열의 경우 /etc/pam.d/system-auth 및 /etc/pam.d/password-auth 파일 내 설정값을 변경
+U-04,패스워드 최대 사용 기간 설정,User 생성 시에 vi /etc/login.defs 파일에서 PASS_MAX_DAYS를 90으로 설정 또는 현재 User의 최대 사용기간을 적용 chage -M 90 < 계정명 > 
+U-05,패스워드 파일 보호,"쉐도우 패스워드 정책 적용 방법 pwconv , 일반 패스워드 정책 적용 방법 pwunconv"
+U-06,"root 홈, 패스 디렉터리 권한 및 패스 설정",vi 편집기를 이용하여 root 계정의 설정파일(~/.profile 과 /etc/profile을 연 후 PATH=$PATH:$HOME/bin 으로 수정
+U-07,파일 및 디렉토리 소유자 설정,"소유자가 존재하지 않는 파일이나 디렉터리가 불필요한 경우 rm 명령으로 삭제, 필요한 경우 chown 명령으로 소유자 및 그룹 변경"
+U-08,/etc/passwd 파일 소유자 및 권한 설정,"/etc/passwd 파일의 소유자 및 권한 변경(소유자 root, 권한 644)"
+U-09,/etc/shadow 파일 소유자 및 권한 설정,"/etc/shadow 파일의 소유자 및 권한 변경 (소유자 root, 권한 400)"
+U-10,/etc/hosts/ 파일 소유자 및 권한 설정,/etc/hosts 파일의 퍼미션을 644로 소유자를 root로 변경
+U-11,/etc/(x)inetd.conf 파일 소유자 및 권한 설정,"/etc/(x)inetd.conf 파일의 퍼미션을 644로, 소유자를 root로 변경"
+U-12,/etc/syslog.conf 파일 소유자 및 권한 설정,"/etc/[r]syslog 파일의 퍼미션을 644로,소유자를 root로 변경"
+U-13,/etc/services 파일 소유자 및 권한 설정,"/etc/services 파일의 퍼미션을 644로, 소유자를 root로 변경"
+U-14,"SUID, SGID, Sticky bit 설정 파일 점검","chmod -s 를 통해 제거하거나 find 명령어를 통해 주기적인 감사, 반드시 사용이 필요한 경우 특정 그룹에서만 사용하도록 제한하는 방법을 사용할 것 "
+U-15,"사용자, 시스템 시작파일 및 환경파일 소유자 및 권한 설정",chown 명령을 통해 소유자를 변경하거나 chmod 명령을 통해 일반 사용자 쓰기 권한 제거
+U-16,world writable 파일 점검,chmod 명령을 통해 일반 사용자 쓰기 권한 제거하거나 파일을 삭제
+U-17,"$HOME/.rhosts, hosts.equiv 사용 금지","rhosts, hosts.equiv 파일 미사용시 파일을 삭제하거나 사용시엔 /etc/hosts.equiv 및 $HOME/.rhosts 파일의 소유자를 root 또는 해당 계정으로 변경하고 퍼미션을 600이하로 변경"
+U-18,접속 IP 및 포트 제한,"/etc/hosts.deny 파일을 vi 편집기를 이용하여 연 후, ALL Deny 설정하고 /etc/hosts.allow 파일을 연 후, 접속 허용 서비스 및 IP 설정"
+U-19,cron 파일 소유자 및 권한 설정,/etc/cron.allow 및 /etc/cron.deny 파일의 소유자 및 권한 변경
+U-20,Finger 서비스 비활성화,/etc/xinetd.d/finger 파일에서 서비스 비활성화 설정
+U-21,Anonymous FTP 비활성화,일반 FTP - Anonymous FTP 접속 제한 설정 방법은 /etc/passwd 파일에서 ftp 또는 anonymous 계정 삭제하는 것 ProFTP - Anonymous FTP 접속 제한 설정 방법은 /etc/passwd 파일에서 ftp 계정 삭제하는 것 vsFTP - Anonymous FTP 접속 제한 설정 방법은 vsFTP 설정파일에서 anonymous_enable을 NO로 설정할 것
+U-22,r 계열 서비스 비활성화,"vi 편집기를 이용하여 /etc/xinetd.d/ 디렉토리 내 rlogin, rsh, rexec 파일을 연 후 disable을 yes로 설정"
+U-23,DoS 공격에 취약한 서비스 비활성화 ,"vi 편집기를 이용하여 /etc/xinetd.d/ 디렉토리 내 echo, discard, daytime, chargen 파일을 연 후 disable을 yes로 설정"
+U-24,NFS 서비스 비활성화,NFS 데몬(nfsd)을 중지
+U-25,NFS 접근통제,everyone 마운트 제거하거나 /etc/exports 파일에서 접근 통제 설정
+U-26,automountd 제거,automountd서비스 데몬 실행 중지 및 시스템 재시작 시 automountd가 시작되지 않도록 설정
+U-27,RPC 서비스 확인,vi 편집기를 이용하여 /etc/xinetd.d/ 디렉터리 내의 불필요한 RPC 서비스 파일을 연 후 disable = yes로 설정
+U-28,"NIS, NIS+ 점검",NFS 서비스 데몬 중지
+U-29,"tftp, talk 서비스 비활성화","vi 편집기를 이용하여 /etc/xinetd.d/ 디렉토리 내 tftp, talk, ntalk 파일을 연 후 disable = yes로 설정"
+U-30,Sendmail 버전 점검,"Sendmail 서비스 실행 여부 및 버전 점검 후, http://www.sendmail.org/ 또는 각 OS 벤더사의 보안 패치 설치"
+U-31,스팸 메일 릴레이 제한,"vi 편집기를 이용하여 sendmail.cf 설정파일을 연 후 R$* $#error $@ 5.7.1 $: ""550 Relaying denied"" 부분 주석 제거 및 특정 IP, domain, Email Address 및 네트워크에 대한 sendmail 접근 제한 확인"
+U-32,일반사용자의 Sendmail 실행 방지,vi 편집기를 이용하여 sendmail.cf 설정파일을 연 후 O PrivacyOptions = 설정 부분에 restricqrun 옵션 추가
+U-33,DNS 보안 버전 패치,"DNS 서비스를 사용할 경우 BIND 버전 확인 후 최신 버전을 업데이트, DNS 서비스를 사용하지 않는 경우 서비스 중지"
+U-34,DNS ZoneTransfer 설정,특정 서버의 Zone Transfer 지정 및 특정 도메인의 Zone에 대해서 제한할 경우에 /etc/named.conf 파일을 수정
+U-35,최신 보안패치 및 벤더 권고사항 적용,"LINUX는 서버에 설치된 패치 리스트의 관리가 불가능하므로 rpm 패키지별 버그가 Fix된 최선 버전 설치가 필요하고 LINUX는 오픈되고, 커스터마이징 된 OS 이므로 LINUX를 구입한 벤더에 따라 rpm 패키지가 다를 수 있으며 RedHat일 경우 사이트에서 해당 버전을 찾고 현재 사용중인 보안 관련 Update를 찾아 다운로드 후 설치"
+U-36,로그의 정기적 검토 및 보고,"su 시도에 관한 로그, 반복적인 로그인 실패에 관한 로그, 로그인 거부 메시지에 관한 로그, 기본적 log 파일의 위치는 /var/adm, /var/log 이므로 로그파일의 백업에 대한 검토해야하며 커널과 시스템에 관련된 로그 메시지들은 syslog와 klogd 두 개의 데몬에 의해서 /var/log/messages에 기록하게 되니 이 파일을 분석함으로써 시스템을 항상 점검 관리해야함"

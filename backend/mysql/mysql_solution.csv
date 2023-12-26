@@ -1,0 +1,44 @@
+진단코드,진단항목,조치방법
+DY-01,불필요한 계정 제거,"■ 불필요한 계정 삭제
+mysql> Delete from user where user='삭제할 계정';"
+DY-02,취약한 패스워드 사용 제한,"■ 패스워드 설정 규칙 적용
+패스워드 설정 규칙에 맞추어 패스워드를 설정할 수 있도록 시스템 차원에서 기능 제공
+■ 패스워드 관리 적용
+패스워드 신규 적용 및 초기화 시 설정 규칙에 맞추어 관리하고 저장 시에는 일 방향 암호 알고리즘을 통한 암호화 처리(One-Way Encryption)
+■ 패스워드 변경기능 구현
+사용자가 패스워드 설정규칙 내에서 스스로 패스워드를 변경할 수 있도록 기능 제공 패스워드 설정은 다음과 같은 방법으로 가능 mysql> use mysql;
+mysql> update user set password=password('new password"") where user='username';
+mysql> flush privileges ; 또는
+mysql> set password for 'user name'@'%'=password('new password"");
+mysql> flush privileges ;"
+DY-03,타 사용자에 권한 부여 옵션 사용 제한,"■ 불필요한 grant_priv 권한 제거
+1) mysql> USE mysql; 
+2) mysql> UPDATE user SET grant='N' WHERE user='<M45>'; 
+3) mysql> UPDATE db SET grant_priv='N' WHERE user='<grant 권한을 제거하고자하는 계정명>';"
+DY-04,DB 사용자 계정 정보 테이블 접근 권한,"■ 일반 사용자로부터 mysql.user 테이블 모든 접근 권한 제거 
+mysql> revoke all on mysql.user from '[user name]'@'[hosts]'; 
+mysql> flush privileges
+
+■ 일반 사용자로부터 mysql.user 테이블 접근 권한 제거 
+mysql> revoke [권한] on mysql.user from [username]; 
+mysql> flush privileges"
+DY-05,root 권한으로 서버 구동 제한,"■ ""my.cnf"" 파일에서 [mysqld] 그룹의 'user' 지시자 설정
+- vi /etc/my.cnf
+[mysqld]
+user=mysql 데몬을 구동할 시스템의 일반 사용자 계정명>"
+DY-06,환경설정 파일 접근 권한,"■ 초기화 파일(my.cnf, my.ini)의 접근 권한을 초기화 파일에 대한 보호를 위하여 600 또는, 640으로 설정 
+my.cnf 파일 디폴트 위치: /etc/my.cnf
+# chmod 600 [my.cnf 파일의 위치]"
+DY-07,안전한 암호화 알고리즘 사용,"■ 수동 조치
+패스워드 저장 시 SHA-256 이상의 해시 알고리즘으로 암호화하여 저장"
+DY-08,로그 활성화,"■ General log 설정
+mysql> set global general_log = ON; 
+mysql> set global general_log = 1;
+
+■ Slow Query 설정
+mysql> set global slow_query_log= ON; 
+  # vi /etc/my.cnf
+slow_query_log_file = /datadir/serverhostname-slow.log"
+DY-09,최신 패치 적용,"■ 데이터베이스에 대한 최신의 버전을 확인 후 업그레이드 및 패치 수행
+버그 패치 릴리즈 사이트: http://downloads.mysql.com/archives/ 
+버그 현황 사이트: http://bugs.mysql.com/bugstats.php"

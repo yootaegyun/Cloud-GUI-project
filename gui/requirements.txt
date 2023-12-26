@@ -1,0 +1,7 @@
+paramiko
+pillow
+pypdf2
+pywin32
+openpyxl
+matplotlib
+pandas

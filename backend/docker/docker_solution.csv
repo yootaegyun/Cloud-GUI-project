@@ -1,0 +1,33 @@
+﻿진단코드,진단항목,조치방법
+DO-01,도커 최신 패치 적용,"Docker 사이트를 통해 주기적으로 버전 점검, 최신 버전 적용시 충분한 테스트 후 적용  "
+DO-02,도커 그룹에 불필요한 사용자 제거,Docker 그룹에서 신뢰되지 않은 사용자 또는 불필요한 사용자 계정은 삭제 | Docker 그룹 이름이 dockerroot일 경우 root 및 dockerrot 그룹에서 신뢰되지 않은 사용자 또는 불필요한 사용자 계정 삭제
+DO-03,Docker daemon audit 설정,auditd 설치 후 /etc/audit/audit.rules 파일에 다음 내용 추가 후 audit 데몬을 재시작
+DO-04,/var/lib/docker audit 설정,auditd 설치 후 /etc/audit/audit.rules 파일에 다음 내용 추가 후 audit 데몬을 재시작
+DO-05,/etc/docker audit 설정,auditd 설치 후 /etc/audit/audit.rules 파일에 다음 내용 추가 후 audit 데몬을 재시작
+DO-06,/etc/docker.service audit 설정,auditd 설치 후 /etc/audit/audit.rules 파일에 다음 내용 추가 후 audit 데몬을 재시작
+DO-07,/etc/docker.socket audit 설정,auditd 설치 후 /etc/audit/audit.rules 파일에 다음 내용 추가 후 audit 데몬을 재시작
+DO-08,/etc/default/docker audit 설정,auditd 설치 후 /etc/docker/daemon.json 파일에 다음 내용 추가 후 audit 데몬을 재시작
+DO-09,default bridge를 통한 컨테이너 간 네트워크 트래픽 제한,"dockerd --icc=false로 데몬 재시작 /etc/default/docker 파일에 DOCKER_OPTS=""--icc=false""옵션 추가 후 데몬 재시작 /etc/docker/daemon.json 파일에 { ""icc"": false } 추가 후 데몬 재시작"
+DO-10,도커 클라이언트 인증 활성화,"docker daemon --authorization-plugin=<PLUGIN_ID> /etc/default/docker 파일에  DOCKER_OPTS="" --authorization-plugin<PLUGIN_ID>""추가 후 데몬 재시작 /etc/docker/daemon.json 파일에 아래와 같은 옵션 추가 후 데몬 재시작 { ""authorization-plugins"": [ ""PLUGIN_ID"" ]}"
+DO-11,legacy registry (v1) 비활성화,"$ docker daemon--disable-legacy-registry 데몬 시작 후 /etc/default/docker 파일에  DOCKER_OPTS=""--disable-legacy-registry"" 옵션 추가 후 데몬 재시작"
+DO-12,추가 권한 획득으로부터 컨테이너 제한,$ docker run --security-opt-no-new-privileges로 컨테이너 실행 후 $ docker run --security-opt=no-new-privileges ubuntu bash
+DO-13,docker.service 소유권 설정,$ chown root:root /lib/systemd/system/docker.service   docker.service 파일의 소유자 및 소유그룹을 root:root로 설정 
+DO-14,docker.service 파일 접근권한 설정,$ chmod 644 /lib/systemd/system/docker.service   docker.service 파일의 접근권한을 644로 설정 
+DO-15,docker.socket 소유권 설정,$ chown root:root /lib/systemd/system/docker.socket   docker.service 파일의 소유자 및 소유그룹을 root:root로 설정
+DO-16,docker.socket 파일 접근권한 설정,$ chmod 644 /lib/systemd/system/docker.socket   docker.socket 파일의 접근권한을 644로 설정 
+DO-17,/etc/docker 디렉터리 소유권 설정,$ chown root:root /etc/docker   /etc/docker 디렉터리의 소유자:소유그룹을 root:root로 설정
+DO-18,/etc/docker 디렉터리 접근권한 설정,$ chmod 755 /etc/docker   /etc/docker 디렉터리의 접근권한을 755로 설정 
+DO-19,/var/run/docker.sock 파일 소유권 설정,$ chown root:docker /var/run/docker.sock   /var/run/docker.sock 파일의 소유자:소유그룹을 root:docker로 설정 
+DO-20,/var/run/docker.sock 접근권한 설정,$ chmod 660 /var/run/docker.sock   docker.sock 파일의 접근권한을 660으로 설정 
+DO-21,daemon.json 파일 소유권 설정,$ chown root:root /etc/docker/daemon.json   daemon.json 파일의 소유자: 소유그룹을 root:root로 설정
+DO-22,daemon.json 파일 접근권한 설정,$ chmod 644 /etc/docker/daemon.json   daemon.json 파일의 접근권한을 644로 설정 
+DO-23,/etc/default/docker 파일 소유권 설정,Debian 계열 /etc/default/docker 파일의 소유자:소유그룹을 root:root로 설정 $ chown root:root /etc/default/docker RedHat 계열 /etc/sysconfig/docker 파일의 소유자:소유그룹을 root:root로 설정 $ chown root:root /etc/sysconfig/docker
+DO-24,/etc/default/docker 파일 접근권한 설정,Debian 계열 /etc/default/docker 파일의 접근권한을 644로 설정 $ chmod 644 /etc/default/docker RedHat 계열 /etc/sysconfig/docker | 644 $ chmod 644 /etc/sysconfig/docker
+DO-25,root가 아닌 user로 컨테이너 실행,Dockerfile에 다음과 같은 내용을 추가 ex) RUN useradd -d /home/username -m -s /bin/bash username USER username
+DO-26,도커를 위한 컨텐츠 신뢰성 활성화,$ export DOCKER_CONTENT_TRUST=1   사용하는 shell(예. bash shell)에 아래와 같은 내용을 추가
+DO-27,컨테이너 SELinux 보안 옵션 설정,"1)SELinux 상태 설정 2)SELinux 정책 설정 3)도커 컨테이너를 위한 SELinux 정책 템플릿을 생성하거나 가져오기 4)SELinux가 활성화 되도록 도커 데몬 시작 4-1)docker daemon --selinux-enabled 4-2)/etc/default/docker 파일에 아래와 같은 옵션 추가 후 데몬 재시작 DOCKER_OPTS=""--selinux-enabled"" 5)$ docker run --interactive --tty--security-opt label=level:TopSecret centos/bin/bash"
+DO-28,컨테이너에서 ssh 사용 금지,컨테이너에서 SSH를 제거하고 nsenter 또는 docker exec 및 docker attach와 같은 명령어를 통해 컨테이너에 접속 1)$ docker exec --interactive --tty $INSTANCE_ID sh 2)docker attach $INSTANCE_ID
+DO-29,컨테이너에 privileged 포트 매핑 금지,컨테이너를 시작할 때 컨테이너 포트를 호스트의 privileged 포트가 아닌 포트에 매핑 | Docker 파일에서 privileged 포트 매핑 선언을 호스팅 하는 컨테이너가 없는지 확인
+DO-30,PIDs cgroup 제한,컨테이너 시작시--pids-limit 플래그를 사용   ex) $ docker run-it --pids-limit 100 <Image_ID>
+DO-31,도커의 default bridge docker0 사용 제한,"사용자 정의 네트워크를 설정하고, 정의된 네트워크에서 컨테이너를 실행"
+DO-32,호스트의 user namespaces 공유 제한,호스트와 컨테이너 간에 user namespaces를 공유하지 않아야 함
